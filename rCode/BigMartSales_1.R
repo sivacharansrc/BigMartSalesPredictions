@@ -5,6 +5,7 @@
 # https://www.analyticsvidhya.com/blog/2016/03/introduction-deep-learning-fundamentals-neural-networks/
 
 ###### PREPARING ENVIRONMENT ####
+#install.packages(c("h2o", "dummies"))
 rm(list = ls())
 options(scipen = 999)
 library(data.table)
@@ -46,7 +47,7 @@ outletIDDf <- unique(outletIDDf)
 cleanData[,Item_Weight_Fixed1 := mean(Item_Weight, na.rm = T), Item_Identifier][,Item_Weight_Fixed:= ifelse(is.na(Item_Weight),Item_Weight_Fixed1,Item_Weight)]
 cleanData[,Item_Fat_Content_Fixed := ifelse(Item_Fat_Content %in% c("Regular", "reg"),"Regular","Low Fat")]
 cleanData$Item_Identifier <- as.integer(as.factor(cleanData$Item_Identifier))
-cleanData[,Sales_By_Item_Type := sum(Item_Outlet_Sales, na.rm = T),Item_Type]
+#cleanData[,Sales_By_Item_Type := sum(Item_Outlet_Sales, na.rm = T),Item_Type]
 cleanData <- data.table(dummy.data.frame(cleanData, names = c("Item_Fat_Content_Fixed", "Outlet_Type", "Outlet_Location_Type"), sep="_"))
 cleanData$Item_Type <- as.integer(as.factor(cleanData$Item_Type))
 cleanData$Outlet_Identifier <- as.integer(as.factor(cleanData$Outlet_Identifier))
@@ -66,9 +67,9 @@ clean.test <- cleanData[-(1:nrow(clean.train)),]
 
 # INITIATING H2O
 
-# localH2o <- h2o.init(nthreads = -1)
-localH2O <- h2o.init(ip='localhost', nthreads=-1,
-                     min_mem_size='10G', max_mem_size='20G')
+ localH2o <- h2o.init(nthreads = -1)
+#localH2O <- h2o.init(ip='localhost', nthreads=-1,
+#                     min_mem_size='10G', max_mem_size='20G')
 # h2o.shutdown(prompt = T)
 
 # CONVERTING DATA SET TO H2O FORMAT | names(train.h2o) names(train) head(train.h2o)
