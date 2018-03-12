@@ -16,6 +16,55 @@ library(h2o)
 #library(plotly)
 library(dummies)
 
+### DEFINING MODE FUNCTION 
+
+Mode <- function(x, na.rm = TRUE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+  
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+
+summariseCategCols <- function(x,y){
+  factCols <- NULL
+  df <- NULL
+  df1 <- NULL
+  z <- x
+  x <- as.data.frame(x)
+  for (i in 1:ncol(x)) {
+    if(class(x[,i]) %in% c("factor","character")){
+      factCols <- c(names(x[i]),factCols)
+    }
+  }
+  for (i in 1:length(factCols)){
+    colName <- factCols[i]
+    respVar <- which(colnames(x) == y)
+    if(length(unique(x[[which(colnames(x) == colName)]])) < 51) {
+      #df1 <-  z[,.(Total_Sum = sum(z[,respVar], na.rm=T), Total_Count = .N), colName]
+      df1 <-  z[,.(Total_Count = .N), colName]
+      names(df1)[1] <- "Category_Values"
+      df1$Category <- colName
+      df1 <- df1[,c(3,1,2)]
+      df <- rbind(df,df1)
+    }
+  }
+  return(df)
+}
+
+summariseCategCols(train, "Item_Outlet_Sales")
+
+x <- train
+y <- "Item_Outlet_Sales"
+
+train[,.(Total_Sum = sum(c("Item_Outlet_Sales"))), Outlet_Type]
+
+gsub("a","","Sivai")
+
+
+
 ####### READING DATA ######
 # View(t(summaryR(data.frame(train)))) | View(t(summaryR(data.frame(test)))) | View(head(train))
 
@@ -43,6 +92,23 @@ outletIDDf <- data.frame(ItemId = cleanData$Outlet_Identifier ,
 outletIDDf <- unique(outletIDDf)
 
 ## Converting all character columns to integers: names(cleanData) View(head(cleanData))
+
+summariseCategCols(clean.train,"Item_Outlet_Sales")
+
+cleanData[,Outlet_Size_Fixed := ifelse(!is.na(Outlet_Size), Outlet_Size, Mode(Outlet_Size)), Outlet_Type]
+
+### FOLLOW UP FROM HERE
+
+
+
+
+
+
+
+
+
+
+
 
 cleanData[,Item_Weight_Fixed1 := mean(Item_Weight, na.rm = T), Item_Identifier][,Item_Weight_Fixed:= ifelse(is.na(Item_Weight),Item_Weight_Fixed1,Item_Weight)]
 cleanData[,Item_Fat_Content_Fixed := ifelse(Item_Fat_Content %in% c("Regular", "reg"),"Regular","Low Fat")]
