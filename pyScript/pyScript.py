@@ -6,6 +6,7 @@ pd.set_option('expand_frame_repr', False)
 import numpy as np
 
 df = pd.read_csv("~\\Git Clones\\BigMartSalesPredictions\\src\\train.csv")
+df = pd.read_csv("~\\Documents\\Python Projects\\BigMartSalesPredictions\\src\\train.csv")
 df.head()
 
 # PERFORMING UNI-VARIATE ANALYSIS
@@ -128,4 +129,38 @@ df['Outlet_Type'].value_counts()
 # Missing Values - No missing values
 # Variable Transformation - Not Applicable
 
+# FIXING ALL VARIABLES AFTER UNI-VARIATE ANALYSIS
 
+# Item_Visibility - Perform sqrt transformation. Any point > 0.196 is outlier
+# Outlet_Establishment_Year - Feature Engineering for No of Years in Market
+# Item_Fat_Content - Variable transform the values
+# Item_Type - Check for feature engineering like healthy foods, junk foods etc
+# Outlet_Size - 30% missing data. Can outlet size be determined using the item_outlet_sales?
+
+df_clean = df
+df_clean['fe_Item_Visibility'] = df_clean['Item_Visibility']
+
+# Fixing outliers for Item_Visibility
+# item_visibility_mean = df_clean.groupby('Item_Type')['Item_Visibility'].mean().reset_index()
+fe_Item_Visibility_mean = df_clean.groupby('Item_Type').agg({'fe_Item_Visibility': 'median'}).reset_index()  # This is good for multiple columns
+lower_limit = np.percentile(df_clean['fe_Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
+upper_limit = np.percentile(df_clean['fe_Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
+df_item_visibility_outliers = df_clean[(df_clean['fe_Item_Visibility'] < lower_limit) | (df_clean['fe_Item_Visibility'] > upper_limit)]
+df_clean = df_clean[~ df_clean.index.isin(df_item_visibility_outliers.index)]
+df_item_visibility_outliers = df_item_visibility_outliers.drop(columns='fe_Item_Visibility')
+df_item_visibility_outliers = df_item_visibility_outliers.merge(fe_Item_Visibility_mean, on='Item_Type', how='left')
+df_clean = df_clean.append(df_item_visibility_outliers, sort=True)
+
+lower_limit = np.percentile(df_clean['fe_Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
+upper_limit = np.percentile(df_clean['fe_Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
+df_clean.loc[(df_clean['fe_Item_Visibility'] < lower_limit) | (df_clean['fe_Item_Visibility'] > upper_limit), 'fe_Item_Visibility'] = df_clean['fe_Item_Visibility'].mean()
+
+df_clean['fe_Item_Visibility'].plot.box()
+
+df_clean['Item_Visibility'].plot.box()
+
+
+
+lower_limit = np.percentile(df_clean['Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['Item_Visibility'], 75) - np.percentile(df_clean['Item_Visibility'], 25)))
+upper_limit = np.percentile(df_clean['Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['Item_Visibility'], 75) - np.percentile(df_clean['Item_Visibility'], 25)))
+df_clean.loc[(df_clean['Item_Visibility'] < lower_limit) | (df_clean['Item_Visibility'] > upper_limit), 'Item_Visibility'] = df_clean['Item_Visibility'].mean()
