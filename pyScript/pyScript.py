@@ -131,6 +131,7 @@ df['Outlet_Type'].value_counts()
 
 # FIXING ALL VARIABLES AFTER UNI-VARIATE ANALYSIS
 
+# Item_Weight - Missing Values
 # Item_Visibility - Perform sqrt transformation. Any point > 0.196 is outlier
 # Outlet_Establishment_Year - Feature Engineering for No of Years in Market
 # Item_Fat_Content - Variable transform the values
@@ -138,29 +139,40 @@ df['Outlet_Type'].value_counts()
 # Outlet_Size - 30% missing data. Can outlet size be determined using the item_outlet_sales?
 
 df_clean = df
-df_clean['fe_Item_Visibility'] = df_clean['Item_Visibility']
 
-# Fixing outliers for Item_Visibility
+# FIXING MISSING VALUES FOR ITEM WEIGHT
+
+df_clean['Item_Identifier'][df_clean['Item_Weight'].isnull()].head()
+df_clean[['Item_Identifier', 'Item_Weight']][df_clean['Item_Identifier'].isin(['FDP10', 'DRI11', 'FDW12', 'FDC14'])].head(20)
+# From the above analysis, the item_weight is directly related to the Item_Identifier. So, the weight can be obtained from Identifier
+df_clean['Item_Weight_varTransformed'] = df_clean['Item_Weight']
+item_weight_container = df_clean[['Item_Identifier', 'Item_Weight_varTransformed']][~df_clean['Item_Weight_varTransformed'].isnull()].drop_duplicates()
+df_missing = df_clean[df_clean['Item_Weight_varTransformed'].isnull()]
+df_missing = df_missing.drop(columns='Item_Weight_varTransformed')
+df_clean = df_clean[~df_clean.index.isin(df_missing.index)]
+df_missing = df_missing.merge(item_weight_container, how='left', on='Item_Identifier')
+df_clean = df_clean.append(df_missing, sort=True)
+df_clean.loc[df_clean['Item_Weight_varTransformed'].isnull(), 'Item_Weight_varTransformed'] = df_clean['Item_Weight_varTransformed'].mean()
+
+df_clean['Item_Weight_varTransformed'].plot.hist()
+
+# THERE ARE NO MISSING VALUES NOR OUTLIERS IN THE ITEM_WEIGHT TRANSFORMED DATA
+
+
+# FIXING OUTLIERS FOR ITEM VISIBILITY AND PERFORMING SQRT TRANSFORMATION
 # item_visibility_mean = df_clean.groupby('Item_Type')['Item_Visibility'].mean().reset_index()
-fe_Item_Visibility_mean = df_clean.groupby('Item_Type').agg({'fe_Item_Visibility': 'median'}).reset_index()  # This is good for multiple columns
-lower_limit = np.percentile(df_clean['fe_Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
-upper_limit = np.percentile(df_clean['fe_Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
-df_item_visibility_outliers = df_clean[(df_clean['fe_Item_Visibility'] < lower_limit) | (df_clean['fe_Item_Visibility'] > upper_limit)]
+df_clean['Item_Visibility_varTransformed'] = df_clean['Item_Visibility']
+Item_Visibility_varTransformed_median = df_clean.groupby('Item_Type').agg({'Item_Visibility_varTransformed': 'median'}).reset_index()  # This is good for multiple columns
+lower_limit = np.percentile(df_clean['Item_Visibility_varTransformed'], 25) - (1.5 * (np.percentile(df_clean['Item_Visibility_varTransformed'], 75) - np.percentile(df_clean['Item_Visibility_varTransformed'], 25)))
+upper_limit = np.percentile(df_clean['Item_Visibility_varTransformed'], 75) + (1.5 * (np.percentile(df_clean['Item_Visibility_varTransformed'], 75) - np.percentile(df_clean['Item_Visibility_varTransformed'], 25)))
+df_item_visibility_outliers = df_clean[(df_clean['Item_Visibility_varTransformed'] < lower_limit) | (df_clean['Item_Visibility_varTransformed'] > upper_limit)]
 df_clean = df_clean[~ df_clean.index.isin(df_item_visibility_outliers.index)]
-df_item_visibility_outliers = df_item_visibility_outliers.drop(columns='fe_Item_Visibility')
-df_item_visibility_outliers = df_item_visibility_outliers.merge(fe_Item_Visibility_mean, on='Item_Type', how='left')
+df_item_visibility_outliers = df_item_visibility_outliers.drop(columns='Item_Visibility_varTransformed')
+df_item_visibility_outliers = df_item_visibility_outliers.merge(Item_Visibility_varTransformed_median, on='Item_Type', how='left')
 df_clean = df_clean.append(df_item_visibility_outliers, sort=True)
+lower_limit = np.percentile(df_clean['Item_Visibility_varTransformed'], 25) - (1.5 * (np.percentile(df_clean['Item_Visibility_varTransformed'], 75) - np.percentile(df_clean['Item_Visibility_varTransformed'], 25)))
+upper_limit = np.percentile(df_clean['Item_Visibility_varTransformed'], 75) + (1.5 * (np.percentile(df_clean['Item_Visibility_varTransformed'], 75) - np.percentile(df_clean['Item_Visibility_varTransformed'], 25)))
+# df_clean[(df_clean['Item_Visibility_varTransformed'] < lower_limit) | (df_clean['Item_Visibility_varTransformed'] > upper_limit)].__len__() # CHECKING THE NUMBER OF OUTLIERS
+df_clean['Item_Visibility_varTransformed'] = np.sqrt(df_clean['Item_Visibility_varTransformed'])
 
-lower_limit = np.percentile(df_clean['fe_Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
-upper_limit = np.percentile(df_clean['fe_Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['fe_Item_Visibility'], 75) - np.percentile(df_clean['fe_Item_Visibility'], 25)))
-df_clean.loc[(df_clean['fe_Item_Visibility'] < lower_limit) | (df_clean['fe_Item_Visibility'] > upper_limit), 'fe_Item_Visibility'] = df_clean['fe_Item_Visibility'].mean()
-
-df_clean['fe_Item_Visibility'].plot.box()
-
-df_clean['Item_Visibility'].plot.box()
-
-
-
-lower_limit = np.percentile(df_clean['Item_Visibility'], 25) - (1.5 * (np.percentile(df_clean['Item_Visibility'], 75) - np.percentile(df_clean['Item_Visibility'], 25)))
-upper_limit = np.percentile(df_clean['Item_Visibility'], 75) + (1.5 * (np.percentile(df_clean['Item_Visibility'], 75) - np.percentile(df_clean['Item_Visibility'], 25)))
-df_clean.loc[(df_clean['Item_Visibility'] < lower_limit) | (df_clean['Item_Visibility'] > upper_limit), 'Item_Visibility'] = df_clean['Item_Visibility'].mean()
+# THE OUTLIERS ARE REDUCED FROM 144 TO 29. ALSO THE ACTUAL DISTRIBUTION WAS RIGHT SKEWED. THIS IS NOW FIXED BY TAKING THE SQRT TRANSFORMATION
