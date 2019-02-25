@@ -238,6 +238,7 @@ df_final.drop(['Item_Type'], 1, inplace=True)
 df_final.head()
 df_final = pd.get_dummies(df_final)
 
+
 # SAMPLING DATA
 
 def  sampleSplit(df):
@@ -250,6 +251,13 @@ def  sampleSplit(df):
     return x_train, y_train, x_test, y_test;
 
 x_train, y_train, x_test, y_test = sampleSplit(df_final)
+
+# Normalizing the dataSet
+
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.fit_transform(x_test)
 
 # PERFORMING LINEAR REGRESSION ON THE DATA SET
 
@@ -294,3 +302,15 @@ plt.hist(y_test)
 plt.subplot(1, 2, 2)
 plt.hist(predictions)
 plt.show()
+
+# PERFORMING LINEAR REGRESSION FROM A DIFFERENT PACKAGE ###
+
+import statsmodels.api as sm
+model = sm.OLS(y_train, x_train).fit()
+predictions = model.predict(x_test)
+
+model.summary()
+
+# https://towardsdatascience.com/linear-regression-python-implementation-ae0d95348ac4
+# https://towardsdatascience.com/simple-and-multiple-linear-regression-in-python-c928425168f9
+#  https://medium.com/@contactsunny/linear-regression-in-python-using-scikit-learn-f0f7b125a204
